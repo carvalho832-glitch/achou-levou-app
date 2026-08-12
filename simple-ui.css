@@ -1,0 +1,157 @@
+/* Modo simples Achou Levou */
+.simple-guide {
+  margin: 12px 0 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.055);
+  border-radius: 18px;
+  padding: 12px 14px;
+  color: var(--text, #f5f7fb);
+  font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.simple-guide-title {
+  display: block;
+  font-size: .95rem;
+  margin-bottom: 4px;
+}
+
+.simple-guide small {
+  display: block;
+  opacity: .72;
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
+.simple-tip { display: none; }
+
+.simple-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.simple-section-header strong { font-size: 1.02rem; }
+
+.simple-section-header small {
+  color: var(--muted, #aab3c5);
+  font-weight: 700;
+}
+
+.simple-toggle-btn,
+.simple-history-toggle,
+.simple-more-toggle {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, #2f80ed, #6d39ff);
+}
+
+body.simple-mode .fields-grid { margin-top: 10px; }
+
+body.simple-mode .fields-grid.simple-collapsed .row,
+body.simple-mode .fields-grid.simple-collapsed .field:not(:first-of-type) {
+  display: none;
+}
+
+body.simple-mode .fields-grid.simple-collapsed { padding-bottom: 16px; }
+
+body.simple-mode .actions {
+  display: grid;
+  gap: 12px;
+}
+
+body.simple-mode .actions button { min-height: 58px; }
+
+/* Esconde botões secundários por padrão */
+body.simple-mode #btn-copiar,
+body.simple-mode #btn-salvar,
+body.simple-mode #btn-limpar-campos,
+body.simple-mode .simple-whatsapp-action,
+body.simple-mode .simple-more-toggle {
+  display: none !important;
+}
+
+/* Antes de gerar: só o botão gerar fica visível na área de ações */
+body.simple-mode:not(.message-ready) #btn-gerar {
+  display: block !important;
+}
+
+/* Depois de gerar: some o gerar e aparece WhatsApp + Mais opções */
+body.simple-mode.message-ready #btn-gerar {
+  display: none !important;
+}
+
+body.simple-mode.message-ready .simple-whatsapp-action {
+  display: block !important;
+  width: 100%;
+  min-height: 60px;
+  font-size: 1rem;
+}
+
+body.simple-mode.message-ready .simple-more-toggle {
+  display: block !important;
+  width: 100%;
+  min-height: 44px;
+  background: rgba(255,255,255,.10);
+  color: var(--text, #f5f7fb);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+/* Quando abrir Mais opções */
+body.simple-mode.simple-more-open #btn-gerar,
+body.simple-mode.simple-more-open #btn-copiar,
+body.simple-mode.simple-more-open #btn-salvar,
+body.simple-mode.simple-more-open #btn-limpar-campos {
+  display: block !important;
+}
+
+body.simple-mode.simple-more-open #btn-gerar,
+body.simple-mode.simple-more-open #btn-copiar,
+body.simple-mode.simple-more-open #btn-salvar,
+body.simple-mode.simple-more-open #btn-limpar-campos {
+  min-height: 46px;
+  font-size: .92rem;
+  opacity: .92;
+}
+
+body.simple-mode .message-output-box::before {
+  content: '✅ Mensagem pronta';
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 900;
+  color: var(--text, #f5f7fb);
+}
+
+body.simple-mode:not(.message-ready) .message-output-box::before {
+  content: '📝 Prévia da mensagem';
+}
+
+body.simple-mode .message-output-box { min-height: auto; }
+
+body.simple-mode .saved-section.simple-history-collapsed #lista-salvas,
+body.simple-mode .saved-section.simple-history-collapsed .bulk-actions,
+body.simple-mode .saved-section.simple-history-collapsed .saved-actions,
+body.simple-mode .saved-section.simple-history-collapsed > button:not(.simple-history-toggle) {
+  display: none !important;
+}
+
+body.simple-mode .saved-section .section-title {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+body.simple-mode .simple-history-toggle {
+  width: 100%;
+  margin: 8px 0 0;
+  background: linear-gradient(135deg, #1fa852, #10b981);
+}
+
+@media (max-width: 520px) {
+  .simple-guide { padding: 11px 12px; }
+}
