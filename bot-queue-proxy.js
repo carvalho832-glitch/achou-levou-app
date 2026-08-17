@@ -169,7 +169,11 @@
       const config = queueApi.loadConfig?.() || {};
       try {
         const url = new URL(String(config.botUrl || ''), window.location.href);
-        return ['localhost', '127.0.0.1'].includes(url.hostname);
+        const host = url.hostname;
+        const privateNetwork = /^10\./.test(host) ||
+          /^192\.168\./.test(host) ||
+          /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+        return ['localhost', '127.0.0.1'].includes(host) || privateNetwork;
       } catch {
         return false;
       }

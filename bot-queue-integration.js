@@ -28,7 +28,24 @@
 
   function profileFromUrl(botUrl) {
     const value = String(botUrl || '').toLowerCase();
-    return value.includes('usuario2.achoulevoubot.uk') || value.includes('localhost:3011') ? 'renata' : 'julio';
+    return value.includes('usuario2.achoulevoubot.uk') || value.includes(':3011') ? 'renata' : 'julio';
+  }
+
+  function requestedBotHost() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const value = params.get('botHost') || params.get('botIp') || params.get('notebook');
+      return String(value || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    } catch {
+      return '';
+    }
+  }
+
+  function botUrlForProfile(profile) {
+    const host = requestedBotHost();
+    if (!host) return profile.botUrl;
+    const port = profile.id === 'renata' ? 3011 : 3010;
+    return `http://${host}:${port}`;
   }
 
   function requestedProfile() {
@@ -75,7 +92,7 @@
       ...saved,
       profileId: profile.id,
       profileLabel: profile.label,
-      botUrl: profile.botUrl
+      botUrl: botUrlForProfile(profile)
     };
 
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -95,7 +112,7 @@
       ...config,
       profileId,
       profileLabel: profile.label,
-      botUrl: profile.botUrl
+      botUrl: botUrlForProfile(profile)
     };
 
     localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
