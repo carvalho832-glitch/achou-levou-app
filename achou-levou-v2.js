@@ -12,7 +12,7 @@
 
   function config() {
     return window.AchouLevouBotQueue?.loadConfig?.() || {
-      botUrl: 'https://bot.achoulevoubot.uk'
+      botUrl: 'http://localhost:3010'
     };
   }
 

@@ -1,16 +1,17 @@
 (() => {
   'use strict';
 
-  const VERSION = '90.0.0';
-  const DEFAULT_BOT_URL = 'https://bot.achoulevoubot.uk';
+  const VERSION = '92.0.0';
+  const DEFAULT_BOT_URL = 'http://localhost:3010';
 
   function panelUrl() {
     const config = window.AchouLevouBotQueue?.loadConfig?.() || {};
     const base = String(config.botUrl || DEFAULT_BOT_URL).trim().replace(/\/+$/, '');
     const target = new URL(`${base}/painel`, window.location.href);
 
-    if (target.protocol !== 'https:') {
-      throw new Error('O endereço do Painel WhatsApp precisa usar HTTPS.');
+    const localPanel = ['localhost', '127.0.0.1'].includes(target.hostname);
+    if (target.protocol !== 'https:' && !(localPanel && target.protocol === 'http:')) {
+      throw new Error('O endereço do Painel WhatsApp precisa usar HTTPS ou localhost.');
     }
 
     return target.toString();

@@ -165,7 +165,18 @@
       return String(config.profileId || 'julio').toLowerCase() !== 'renata';
     }
 
+    function isLocalBotProfile() {
+      const config = queueApi.loadConfig?.() || {};
+      try {
+        const url = new URL(String(config.botUrl || ''), window.location.href);
+        return ['localhost', '127.0.0.1'].includes(url.hostname);
+      } catch {
+        return false;
+      }
+    }
+
     async function getOverview(options = {}) {
+      if (isLocalBotProfile() && originalGetOverview) return originalGetOverview(options);
       if (!isJulioProfile() && originalGetOverview) return originalGetOverview(options);
 
       const force = options.force === true;
@@ -225,6 +236,7 @@
     }
 
     async function sendMessages(messages) {
+      if (isLocalBotProfile() && originalSendMessages) return originalSendMessages(messages);
       if (!isJulioProfile() && originalSendMessages) return originalSendMessages(messages);
 
       const clean = Array.isArray(messages)
@@ -260,6 +272,7 @@
     }
 
     async function checkBotStatus() {
+      if (isLocalBotProfile() && originalCheckBotStatus) return originalCheckBotStatus();
       if (!isJulioProfile() && originalCheckBotStatus) return originalCheckBotStatus();
       const overview = await getOverview({ force: true });
       if (overview.statusOk && overview.status) {

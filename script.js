@@ -438,8 +438,8 @@ btnAbrirPainelBot?.addEventListener('click', () => {
     // Fallback para celular: não depender de script assíncrono nem de pop-up.
     const perfil = new URLSearchParams(window.location.search).get('perfil');
     const botUrl = String(perfil || '').toLowerCase() === 'renata'
-        ? 'https://usuario2.achoulevoubot.uk'
-        : 'https://bot.achoulevoubot.uk';
+        ? 'http://localhost:3011'
+        : 'http://localhost:3010';
     window.location.assign(`${botUrl}/painel`);
 });
 

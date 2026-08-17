@@ -6,12 +6,12 @@
     julio: Object.freeze({
       id: 'julio',
       label: 'Júlio',
-      botUrl: 'https://bot.achoulevoubot.uk'
+      botUrl: 'http://localhost:3010'
     }),
     renata: Object.freeze({
       id: 'renata',
       label: 'Renata',
-      botUrl: 'https://usuario2.achoulevoubot.uk'
+      botUrl: 'http://localhost:3011'
     })
   });
 
@@ -28,7 +28,7 @@
 
   function profileFromUrl(botUrl) {
     const value = String(botUrl || '').toLowerCase();
-    return value.includes('usuario2.achoulevoubot.uk') ? 'renata' : 'julio';
+    return value.includes('usuario2.achoulevoubot.uk') || value.includes('localhost:3011') ? 'renata' : 'julio';
   }
 
   function requestedProfile() {
@@ -333,7 +333,7 @@
         body: JSON.stringify({ text: cleanMessages.join('\n---\n') }),
         credentials: 'omit',
         mode: 'cors'
-      }, 25000);
+      }, 90000);
 
       if (!response.ok || !json?.ok) {
         throw new Error(json?.error || `Falha ao enviar. HTTP ${response.status}: ${text.slice(0, 120)}`);
@@ -345,7 +345,7 @@
     } catch (error) {
       setStatus(`Falha no envio para ${config.profileLabel}`, 'error');
       if (error?.name === 'AbortError') {
-        throw new Error('O envio demorou mais de 25 segundos. Tente novamente.');
+        throw new Error('O robô demorou para acordar. Tente novamente em alguns segundos.');
       }
       throw error;
     }

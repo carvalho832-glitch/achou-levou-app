@@ -6,8 +6,8 @@
   const POLL_INTERVAL_MS = 10000;
 
   const PROFILES = Object.freeze({
-    julio: Object.freeze({ id: 'julio', label: 'Júlio', botUrl: 'https://bot.achoulevoubot.uk' }),
-    renata: Object.freeze({ id: 'renata', label: 'Renata', botUrl: 'https://usuario2.achoulevoubot.uk' })
+    julio: Object.freeze({ id: 'julio', label: 'Júlio', botUrl: 'http://localhost:3010' }),
+    renata: Object.freeze({ id: 'renata', label: 'Renata', botUrl: 'http://localhost:3011' })
   });
 
   let pollTimer = null;
@@ -21,7 +21,8 @@
   }
 
   function profileFromUrl(value) {
-    return String(value || '').toLowerCase().includes('usuario2.achoulevoubot.uk') ? 'renata' : 'julio';
+    const normalized = String(value || '').toLowerCase();
+    return normalized.includes('usuario2.achoulevoubot.uk') || normalized.includes('localhost:3011') ? 'renata' : 'julio';
   }
 
   function requestedProfile() {
