@@ -41,7 +41,22 @@
     }
   }
 
+  function requestedBotUrl(profile) {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const specific = profile.id === 'renata'
+        ? params.get('botRenata') || params.get('renataBotUrl')
+        : params.get('botJulio') || params.get('julioBotUrl');
+      const value = specific || params.get('botUrl') || '';
+      return String(value || '').trim().replace(/\/+$/, '');
+    } catch {
+      return '';
+    }
+  }
+
   function botUrlForProfile(profile) {
+    const url = requestedBotUrl(profile);
+    if (url) return url;
     const host = requestedBotHost();
     if (!host) return profile.botUrl;
     const port = profile.id === 'renata' ? 3011 : 3010;

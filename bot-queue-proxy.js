@@ -165,7 +165,7 @@
       return String(config.profileId || 'julio').toLowerCase() !== 'renata';
     }
 
-    function isLocalBotProfile() {
+    function shouldUseDirectBotProfile() {
       const config = queueApi.loadConfig?.() || {};
       try {
         const url = new URL(String(config.botUrl || ''), window.location.href);
@@ -173,14 +173,18 @@
         const privateNetwork = /^10\./.test(host) ||
           /^192\.168\./.test(host) ||
           /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
-        return ['localhost', '127.0.0.1'].includes(host) || privateNetwork;
+        const quickTunnel = host.endsWith('.trycloudflare.com');
+        const explicitUrl = new URLSearchParams(window.location.search).has('botUrl') ||
+          new URLSearchParams(window.location.search).has('botJulio') ||
+          new URLSearchParams(window.location.search).has('botRenata');
+        return ['localhost', '127.0.0.1'].includes(host) || privateNetwork || quickTunnel || explicitUrl;
       } catch {
         return false;
       }
     }
 
     async function getOverview(options = {}) {
-      if (isLocalBotProfile() && originalGetOverview) return originalGetOverview(options);
+      if (shouldUseDirectBotProfile() && originalGetOverview) return originalGetOverview(options);
       if (!isJulioProfile() && originalGetOverview) return originalGetOverview(options);
 
       const force = options.force === true;
@@ -240,7 +244,7 @@
     }
 
     async function sendMessages(messages) {
-      if (isLocalBotProfile() && originalSendMessages) return originalSendMessages(messages);
+      if (shouldUseDirectBotProfile() && originalSendMessages) return originalSendMessages(messages);
       if (!isJulioProfile() && originalSendMessages) return originalSendMessages(messages);
 
       const clean = Array.isArray(messages)
@@ -276,7 +280,7 @@
     }
 
     async function checkBotStatus() {
-      if (isLocalBotProfile() && originalCheckBotStatus) return originalCheckBotStatus();
+      if (shouldUseDirectBotProfile() && originalCheckBotStatus) return originalCheckBotStatus();
       if (!isJulioProfile() && originalCheckBotStatus) return originalCheckBotStatus();
       const overview = await getOverview({ force: true });
       if (overview.statusOk && overview.status) {
