@@ -17,7 +17,7 @@ jobs:
         run: |
           curl --fail --location --silent --show-error \
             -o Fluxo-v0.6.1.apk \
-            'https://tmpfiles.org/dl/wQwbrj6BWE8J/fluxo-v0.6.1.apk'
+            'https://temp.sh/IVESv/Fluxo-v0.6.1.apk'
           echo '43c51a555d47332f653c380a6b480cebf2c03391bad8611593cac4a769fd2d1e  Fluxo-v0.6.1.apk' | sha256sum -c -
           ls -lh Fluxo-v0.6.1.apk
 
