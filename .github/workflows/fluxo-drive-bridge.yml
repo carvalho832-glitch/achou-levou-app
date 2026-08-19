@@ -1,0 +1,30 @@
+name: Fluxo Drive Bridge
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bridge-trigger/**'
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar APK assinado
+        run: |
+          curl --fail --location --silent --show-error \
+            -o Fluxo-v0.6.1.apk \
+            'https://tmpfiles.org/dl/wQwbrj6BWE8J/fluxo-v0.6.1.apk'
+          echo '43c51a555d47332f653c380a6b480cebf2c03391bad8611593cac4a769fd2d1e  Fluxo-v0.6.1.apk' | sha256sum -c -
+          ls -lh Fluxo-v0.6.1.apk
+
+      - name: Publicar artefato temporário
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxo-v061-apk
+          path: Fluxo-v0.6.1.apk
+          retention-days: 1
+          compression-level: 0
