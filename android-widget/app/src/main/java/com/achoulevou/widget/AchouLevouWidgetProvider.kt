@@ -3,17 +3,17 @@ package com.achoulevou.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.os.SystemClock
 import android.widget.RemoteViews
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 class AchouLevouWidgetProvider : AppWidgetProvider() {
 
@@ -42,8 +42,6 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
         private const val PROFILE_PREFIX = "profile_"
 
         private val executor = Executors.newCachedThreadPool()
-        private val zone = ZoneId.of("America/Sao_Paulo")
-        private val clockFormat = DateTimeFormatter.ofPattern("HH:mm").withZone(zone)
 
         private val JULIO = Profile("julio", "Júlio", "https://bot.achoulevoubot.uk")
         private val RENATA = Profile("renata", "Renata", "https://usuario2.achoulevoubot.uk")
@@ -58,7 +56,6 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-
         val action = intent.action ?: return
         if (action != ACTION_SELECT_JULIO && action != ACTION_SELECT_RENATA && action != ACTION_REFRESH) return
 
@@ -131,7 +128,7 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
             readTimeout = 10000
             useCaches = false
             setRequestProperty("Accept", "application/json")
-            setRequestProperty("User-Agent", "AchouLevouWidget/1.0")
+            setRequestProperty("User-Agent", "AchouLevouWidget/2.0")
         }
 
         return try {
@@ -152,11 +149,17 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
     private fun renderLoading(context: Context, manager: AppWidgetManager, widgetId: Int) {
         val profile = selectedProfile(context, widgetId)
         val views = baseViews(context, widgetId, profile)
-        views.setTextViewText(R.id.txt_status, "🟡 Atualizando " + profile.label + "...")
-        views.setTextViewText(R.id.txt_queue, "Buscando dados da fila")
-        views.setTextViewText(R.id.txt_groups, "")
-        views.setTextViewText(R.id.txt_schedule, "")
-        views.setTextViewText(R.id.txt_reason, "")
+        views.setTextViewText(R.id.txt_status_value, "Atualizando")
+        views.setTextViewText(R.id.txt_status_sub, profile.label + " • consultando VM")
+        views.setTextViewText(R.id.txt_queue_value, "…")
+        views.setTextViewText(R.id.txt_queue_sub, "Buscando fila")
+        views.setTextViewText(R.id.txt_sent_value, "…")
+        views.setTextViewText(R.id.txt_sent_sub, "Carregando")
+        stopCountdown(views, "…")
+        views.setTextViewText(R.id.txt_progress_percent, "…")
+        views.setProgressBar(R.id.progress_offers, 100, 0, false)
+        views.setTextViewText(R.id.txt_progress_detail, "Sincronizando ofertas")
+        views.setTextViewText(R.id.txt_footer, "Atualizando dados de " + profile.label)
         manager.updateAppWidget(widgetId, views)
     }
 
@@ -168,29 +171,78 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
         snapshot: Snapshot
     ) {
         val views = baseViews(context, widgetId, profile)
-        val connection = if (snapshot.connected) "🟢 WhatsApp conectado" else "🔴 WhatsApp offline"
-        val queueState = if (snapshot.queueRunning) "fila ativa" else "fila pausada"
+        val total = max(0, snapshot.sentToday + snapshot.pending)
+        val progress = if (total > 0) ((snapshot.sentToday * 100.0) / total).toInt().coerceIn(0, 100) else 0
 
-        views.setTextViewText(R.id.txt_status, connection + " • " + queueState)
-        views.setTextViewText(
-            R.id.txt_queue,
-            "📦 " + snapshot.pending + " pendentes   •   ✅ " + snapshot.sentToday + " enviadas hoje"
+        views.setTextViewText(R.id.txt_status_value, if (snapshot.connected) "Conectado" else "Offline")
+        views.setTextColor(
+            R.id.txt_status_value,
+            Color.parseColor(if (snapshot.connected) "#00F28A" else "#FF5D73")
         )
         views.setTextViewText(
-            R.id.txt_groups,
-            "👥 " + snapshot.groups + " grupos   •   " + snapshot.offersPerBatch +
-                " por lote   •   " + snapshot.intervalMinutes + " min"
+            R.id.txt_status_sub,
+            if (snapshot.queueRunning) "WhatsApp Web • fila ativa" else "WhatsApp Web • fila pausada"
         )
+
+        views.setTextViewText(R.id.txt_queue_value, snapshot.pending.toString() + " / " + total)
         views.setTextViewText(
-            R.id.txt_schedule,
-            "🕒 " + snapshot.windowStart + " → " + snapshot.windowEnd +
-                "   •   Próximo: " + formatNext(snapshot.nextRunAt)
+            R.id.txt_queue_sub,
+            if (snapshot.queueRunning) "Fila em execução" else "Fila pausada"
         )
+
+        views.setTextViewText(R.id.txt_sent_value, snapshot.sentToday.toString())
+        views.setTextViewText(R.id.txt_sent_sub, "Ofertas concluídas hoje")
+
+        startCountdown(views, snapshot.nextRunAt)
+
+        views.setProgressBar(R.id.progress_offers, 100, progress, false)
+        views.setTextViewText(R.id.txt_progress_percent, progress.toString() + "%")
         views.setTextViewText(
-            R.id.txt_reason,
-            snapshot.blockReason?.take(72) ?: "Atualizado às " + clockFormat.format(Instant.now())
+            R.id.txt_progress_detail,
+            snapshot.sentToday.toString() + " de " + total + " ofertas concluídas"
         )
+
+        views.setTextViewText(
+            R.id.txt_footer,
+            "👥 " + snapshot.groups + " grupos  •  " +
+                snapshot.offersPerBatch + " por lote  •  " +
+                snapshot.intervalMinutes + " min  •  " +
+                snapshot.windowStart + " → " + snapshot.windowEnd
+        )
+
         manager.updateAppWidget(widgetId, views)
+    }
+
+    private fun startCountdown(views: RemoteViews, nextRunAt: String?) {
+        val targetMillis = try {
+            nextRunAt?.let { Instant.parse(it).toEpochMilli() }
+        } catch (_: Exception) {
+            null
+        }
+
+        if (targetMillis == null) {
+            stopCountdown(views, "—")
+            views.setTextViewText(R.id.txt_next_sub, "Sem próximo lote")
+            return
+        }
+
+        val remaining = targetMillis - System.currentTimeMillis()
+        if (remaining <= 0L) {
+            stopCountdown(views, "AGORA")
+            views.setTextViewText(R.id.txt_next_sub, "Próximo lote liberado")
+            return
+        }
+
+        val base = SystemClock.elapsedRealtime() + remaining
+        views.setChronometer(R.id.txt_next_countdown, base, null, true)
+        views.setChronometerCountDown(R.id.txt_next_countdown, true)
+        views.setTextViewText(R.id.txt_next_sub, "Até o próximo lote")
+    }
+
+    private fun stopCountdown(views: RemoteViews, label: String) {
+        views.setChronometer(R.id.txt_next_countdown, SystemClock.elapsedRealtime(), null, false)
+        views.setChronometerCountDown(R.id.txt_next_countdown, true)
+        views.setTextViewText(R.id.txt_next_countdown, label)
     }
 
     private fun renderError(
@@ -201,17 +253,24 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
         error: Exception
     ) {
         val views = baseViews(context, widgetId, profile)
-        views.setTextViewText(R.id.txt_status, "⚠️ " + profile.label + ": sem leitura")
-        views.setTextViewText(R.id.txt_queue, "Toque em ↻ para tentar novamente")
-        views.setTextViewText(R.id.txt_groups, "")
-        views.setTextViewText(R.id.txt_schedule, "")
-        views.setTextViewText(R.id.txt_reason, error.message?.take(70) ?: "Falha de conexão")
+        views.setTextViewText(R.id.txt_status_value, "Sem leitura")
+        views.setTextColor(R.id.txt_status_value, Color.parseColor("#FFB547"))
+        views.setTextViewText(R.id.txt_status_sub, "Toque em ↻ para atualizar")
+        views.setTextViewText(R.id.txt_queue_value, "—")
+        views.setTextViewText(R.id.txt_queue_sub, "VM indisponível")
+        views.setTextViewText(R.id.txt_sent_value, "—")
+        views.setTextViewText(R.id.txt_sent_sub, "Sem dados")
+        stopCountdown(views, "—")
+        views.setTextViewText(R.id.txt_next_sub, "Sem leitura")
+        views.setProgressBar(R.id.progress_offers, 100, 0, false)
+        views.setTextViewText(R.id.txt_progress_percent, "—")
+        views.setTextViewText(R.id.txt_progress_detail, "Não foi possível sincronizar")
+        views.setTextViewText(R.id.txt_footer, error.message?.take(60) ?: "Falha de conexão")
         manager.updateAppWidget(widgetId, views)
     }
 
     private fun baseViews(context: Context, widgetId: Int, profile: Profile): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_achou_levou)
-        views.setTextViewText(R.id.txt_profile, "ACHOU LEVOU • " + profile.label.uppercase())
 
         views.setInt(
             R.id.btn_julio,
@@ -264,14 +323,5 @@ class AchouLevouWidgetProvider : AppWidgetProvider() {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-    }
-
-    private fun formatNext(value: String?): String {
-        if (value.isNullOrBlank()) return "—"
-        return try {
-            clockFormat.format(Instant.parse(value))
-        } catch (_: Exception) {
-            value.take(16)
-        }
     }
 }
