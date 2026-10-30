@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'achou-levou-v95-cloud-ai';
+const CACHE_VERSION = 'achou-levou-v96-cloud-ai-fixed';
 const API_ERRADA = 'https://bot-afiliados-1fvi.onrender.com';
 const API_CORRETA = 'https://bot-afiliados-1fwi.onrender.com';
 const SHOPEE_PRODUCT_PATH = '/shopee/produto';
@@ -7,19 +7,19 @@ const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 self.addEventListener('install', () => {
-    console.log('Achou Levou interface v95 instalada.');
+    console.log('Achou Levou interface v96 instalada.');
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    console.log('Achou Levou interface v95 ativada. Limpando caches antigos.');
+    console.log('Achou Levou interface v96 ativada. Limpando caches antigos.');
     event.waitUntil(
         caches.keys()
             .then(keys => Promise.all(keys.map(key => caches.delete(key))))
             .then(() => self.clients.claim())
             .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
             .then(clients => Promise.all(clients.map(client => {
-                client.postMessage({ type: 'ACHOU_LEVOU_UPDATED', version: '95' });
+                client.postMessage({ type: 'ACHOU_LEVOU_UPDATED', version: '96' });
                 return client.navigate(client.url).catch(() => null);
             })))
     );
@@ -147,7 +147,7 @@ self.addEventListener('fetch', (event) => {
 
     if (url.includes('openai-client.js')) {
         const replacementUrl = new URL('./openai-client.js', self.location.href);
-        replacementUrl.searchParams.set('v', '95');
+        replacementUrl.searchParams.set('v', '96');
         event.respondWith(fetch(replacementUrl.toString(), { cache: 'no-store' }));
         return;
     }
@@ -167,6 +167,33 @@ self.addEventListener('fetch', (event) => {
     if (url.includes('shared-offers-client.js')) {
         requestUrl.searchParams.set('v', '1');
         event.respondWith(fetch(requestUrl.toString(), { cache: 'no-store' }));
+        return;
+    }
+
+    // Compatibilidade: instalações antigas podem continuar pedindo IA ao Render suspenso.
+    // O SW redireciona SOMENTE geração de mensagens, sem tocar em grupos nem envios.
+    const legacyAi = event.request.method === 'POST' &&
+        [API_ERRADA, API_CORRETA].includes(requestUrl.origin) &&
+        requestUrl.pathname.replace(/\\/+$/, '') === '/gerar-mensagem';
+    if (legacyAi) {
+        event.respondWith((async () => {
+            try {
+                const body = await event.request.clone().text();
+                return await fetch('https://usuario2.achoulevoubot.uk/gerar-mensagem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body, mode: 'cors', credentials: 'omit', cache: 'no-store',
+                    signal: event.request.signal
+                });
+            } catch (error) {
+                return new Response(JSON.stringify({
+                    ok: false,
+                    error: 'Sem comunicação com a API Google Cloud. Confira a conexão e tente novamente.'
+                }), {
+                    status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8' }
+                });
+            }
+        })());
         return;
     }
 
